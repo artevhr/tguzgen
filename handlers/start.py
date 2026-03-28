@@ -44,7 +44,7 @@ async def _tier_badge(db: Database, user_id: int) -> str:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    db: Database = message.bot["db"]
+    db: Database = message.bot.db
     user = message.from_user
 
     # Parse referral arg
