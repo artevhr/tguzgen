@@ -100,7 +100,7 @@ async def cmd_start(message: Message):
 
 @router.callback_query(F.data == "main_menu")
 async def back_to_menu(callback: CallbackQuery):
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     user = callback.from_user
     badge = await _tier_badge(db, user.id)
     is_admin = user.id in config.ADMIN_IDS
@@ -114,7 +114,7 @@ async def back_to_menu(callback: CallbackQuery):
 
 @router.callback_query(F.data == "referral")
 async def show_referral(callback: CallbackQuery):
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     user = await db.get_user(callback.from_user.id)
     bot_info = await callback.bot.get_me()
     bot_username = bot_info.username
