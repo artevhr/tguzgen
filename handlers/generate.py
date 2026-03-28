@@ -76,7 +76,7 @@ async def start_generate(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("gl_"), GenerateStates.choosing_length)
 async def pick_length(callback: CallbackQuery, state: FSMContext):
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     val = callback.data[3:]
 
     if val == "custom":
@@ -99,7 +99,7 @@ async def pick_length(callback: CallbackQuery, state: FSMContext):
 
 @router.message(GenerateStates.choosing_length)
 async def custom_length_msg(message: Message, state: FSMContext):
-    db: Database = message.bot["db"]
+    db: Database = message.bot.db
     try:
         length = int(message.text.strip())
         if not 2 <= length <= 32:
