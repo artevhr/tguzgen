@@ -85,7 +85,7 @@ async def cmd_admin(message: Message, state: FSMContext):
 async def show_stats(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     s = await db.get_stats()
     await callback.message.edit_text(
         f"📊 <b>Статистика бота</b>\n\n"
@@ -104,7 +104,7 @@ async def show_stats(callback: CallbackQuery):
 async def show_all_users(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     users = await db.get_all_users()
     lines = []
     for u in users[:50]:  # cap to avoid huge message
@@ -138,7 +138,7 @@ async def ask_user_info_id(callback: CallbackQuery, state: FSMContext):
 async def show_user_info(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
-    db: Database = message.bot["db"]
+    db: Database = message.bot.db
     text = message.text.strip().lstrip("@")
     user = None
 
@@ -230,7 +230,7 @@ async def grant_ask_days(message: Message, state: FSMContext):
 async def grant_premium(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
-    db: Database = message.bot["db"]
+    db: Database = message.bot.db
     try:
         days = int(message.text.strip())
         if days < 0:
@@ -287,7 +287,7 @@ async def ask_revoke_id(callback: CallbackQuery, state: FSMContext):
 async def revoke_premium(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
-    db: Database = message.bot["db"]
+    db: Database = message.bot.db
     try:
         uid = int(message.text.strip())
     except ValueError:
@@ -361,7 +361,7 @@ async def confirm_broadcast(message: Message, state: FSMContext):
 async def do_broadcast(callback: CallbackQuery, state: FSMContext):
     if not is_admin(callback.from_user.id):
         return
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     data = await state.get_data()
     await state.clear()
 
