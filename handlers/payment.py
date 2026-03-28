@@ -61,7 +61,7 @@ async def show_premium_info(callback: CallbackQuery):
 
 @router.callback_query(F.data == "buy_premium")
 async def buy_premium(callback: CallbackQuery):
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     uid = callback.from_user.id
     price = await db.get_user_price(uid)
 
@@ -87,7 +87,7 @@ async def pre_checkout(query: PreCheckoutQuery):
 
 @router.message(F.successful_payment)
 async def successful_payment(message: Message):
-    db: Database = message.bot["db"]
+    db: Database = message.bot.db
     uid = message.from_user.id
     payload = message.successful_payment.invoice_payload
 
