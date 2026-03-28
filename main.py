@@ -29,7 +29,7 @@ async def main():
     # Init DB and inject into bot context
     db = Database(config.DATABASE_PATH)
     await db.init()
-    bot["db"] = db
+    bot.db = db
 
     # Register routers (admin first for priority filters)
     dp.include_router(admin_router)
