@@ -153,7 +153,7 @@ async def back_to_length(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("gc_"), GenerateStates.choosing_count)
 async def pick_count(callback: CallbackQuery, state: FSMContext):
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     val = callback.data[3:]
 
     if val == "custom":
@@ -173,7 +173,7 @@ async def pick_count(callback: CallbackQuery, state: FSMContext):
 
 @router.message(GenerateStates.choosing_count)
 async def custom_count_msg(message: Message, state: FSMContext):
-    db: Database = message.bot["db"]
+    db: Database = message.bot.db
     is_prem = await db.is_premium(message.from_user.id)
     try:
         count = int(message.text.strip())
