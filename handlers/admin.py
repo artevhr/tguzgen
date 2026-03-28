@@ -342,7 +342,7 @@ async def confirm_broadcast(message: Message, state: FSMContext):
         bc_caption_entities=message.caption_entities,
     )
     await state.set_state(AdminStates.broadcast_confirm)
-    db: Database = message.bot["db"]
+    db: Database = message.bot.db
     user_count = len(await db.get_all_user_ids())
 
     b = InlineKeyboardBuilder()
