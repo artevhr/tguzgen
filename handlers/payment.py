@@ -17,7 +17,7 @@ PAYLOAD_PREFIX = "premium_1month_"
 
 @router.callback_query(F.data == "premium")
 async def show_premium_info(callback: CallbackQuery):
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     uid = callback.from_user.id
     is_prem = await db.is_premium(uid)
     price = await db.get_user_price(uid)
