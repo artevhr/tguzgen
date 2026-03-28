@@ -11,7 +11,7 @@ router = Router()
 
 @router.callback_query(F.data == "profile")
 async def show_profile(callback: CallbackQuery):
-    db: Database = callback.bot["db"]
+    db: Database = callback.bot.db
     uid = callback.from_user.id
     user = await db.get_user(uid)
 
