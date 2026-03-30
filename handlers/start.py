@@ -73,13 +73,13 @@ async def cmd_start(message: Message):
             if success:
                 referrer = await db.get_user(referrer_id)
                 discount = referrer["referral_discount"]
-                new_price = config.PREMIUM_PRICE_STARS - discount
+                prices = await db.get_user_prices(referrer_id)
                 try:
                     await message.bot.send_message(
                         referrer_id,
-                        f"🎉 По твоей ссылке зарегистрировался новый пользователь!\n"
-                        f"💰 Твоя скидка на Premium: <b>{discount}⭐</b>\n"
-                        f"🏷 Цена для тебя: <b>{new_price}⭐</b> (из {config.PREMIUM_PRICE_STARS}⭐)",
+                        f"По твоей ссылке зарегистрировался новый пользователь!\n"
+                        f"Твоя скидка: <b>{discount} звёзд</b>\n"
+                        f"Месяц: <b>{prices['monthly']} звёзд</b>  |  Навсегда: <b>{prices['lifetime']} звёзд</b>",
                         parse_mode="HTML",
                     )
                 except Exception:

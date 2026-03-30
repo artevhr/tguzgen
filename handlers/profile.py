@@ -21,64 +21,72 @@ async def show_profile(callback: CallbackQuery):
 
     is_admin  = uid in config.ADMIN_IDS
     is_prem   = await db.is_premium(uid)
+    is_life   = await db.is_lifetime(uid)
     daily_used = await db.get_daily_generations(uid)
 
-    # Tier display
+    # Tier
     if is_admin:
-        tier = "👑 Admin (Premium навсегда)"
-        gens_line = "∞ безлимит"
+        tier = "Admin (Premium навсегда)"
+        gens_line = "безлимит"
+    elif is_life:
+        tier = "Premium Навсегда"
+        gens_line = "безлимит"
     elif is_prem:
-        tier = "⭐ Premium"
-        gens_line = "∞ безлимит"
+        tier = "Premium"
+        gens_line = "безлимит"
     else:
-        tier = "🆓 Free"
+        tier = "Free"
         remaining = max(0, config.FREE_DAILY_LIMIT - daily_used)
         gens_line = f"{remaining} / {config.FREE_DAILY_LIMIT} сегодня"
 
-    # Premium expiry
+    # Expiry
     expiry_line = ""
-    if is_prem and not is_admin and user.get("premium_until"):
+    if is_prem and not is_life and not is_admin and user.get("premium_until"):
         expiry_dt = datetime.fromisoformat(user["premium_until"])
-        expiry_line = f"\n📅 Premium до: <b>{expiry_dt.strftime('%d.%m.%Y')}</b>"
+        expiry_line = f"\nPremium до: <b>{expiry_dt.strftime('%d.%m.%Y')}</b>"
 
-    # Referral info
-    total_gens    = user.get("total_generations") or 0
+    total_gens     = user.get("total_generations") or 0
     referral_count = user.get("referral_count") or 0
     discount       = user.get("referral_discount") or 0
     referrer_id    = user.get("referrer_id")
     referrer_name  = await db.get_referrer_name(referrer_id)
 
-    # Registration date
+    # History count
+    history = await db.get_history(uid, limit=50)
+    history_count = len(history)
+
     created_raw = user.get("created_at", "")
     try:
-        created_dt  = datetime.fromisoformat(created_raw)
-        created_str = created_dt.strftime("%d.%m.%Y")
+        created_str = datetime.fromisoformat(created_raw).strftime("%d.%m.%Y")
     except Exception:
         created_str = "—"
 
-    price = await db.get_user_price(uid)
+    prices = await db.get_user_prices(uid)
+    tg_username = callback.from_user.username
+    uname_line = f"@{tg_username}" if tg_username else "не установлен"
 
     b = InlineKeyboardBuilder()
     if not is_prem and not is_admin:
-        b.button(text=f"⭐ Купить Premium — {price}⭐", callback_data="premium")
-    b.button(text="🔗 Реферальная ссылка", callback_data="referral")
-    b.button(text="◀️ Главное меню",        callback_data="main_menu")
+        b.button(text=f"Купить Premium — {prices['monthly']} звёзд / мес", callback_data="premium")
+        b.button(text=f"Навсегда — {prices['lifetime']} звёзд", callback_data="premium")
+    elif is_prem and not is_life and not is_admin:
+        b.button(text=f"Продлить / Навсегда", callback_data="premium")
+    b.button(text=f"История ({history_count})", callback_data="history")
+    b.button(text="Реферальная ссылка",         callback_data="referral")
+    b.button(text="Главное меню",               callback_data="main_menu")
     b.adjust(1)
 
-    tg_username = callback.from_user.username
-    username_line = f"@{tg_username}" if tg_username else "не установлен"
-
     await callback.message.edit_text(
-        f"👤 <b>Личный кабинет</b>\n\n"
-        f"🆔 ID: <code>{uid}</code>\n"
-        f"📛 Юзернейм: {username_line}\n"
-        f"📆 Регистрация: {created_str}\n\n"
-        f"🏷 Тариф: {tier}{expiry_line}\n"
-        f"🎲 Генераций: {gens_line}\n"
-        f"📊 Всего генераций: {total_gens}\n\n"
-        f"👥 Приглашено: <b>{referral_count}</b> чел.\n"
-        f"💰 Скидка: <b>{discount}⭐</b>\n"
-        f"🔗 Тебя пригласил: <b>{referrer_name}</b>",
+        f"<b>Личный кабинет</b>\n\n"
+        f"ID: <code>{uid}</code>\n"
+        f"Юзернейм: {uname_line}\n"
+        f"Регистрация: {created_str}\n\n"
+        f"Тариф: <b>{tier}</b>{expiry_line}\n"
+        f"Генераций: {gens_line}\n"
+        f"Всего генераций: {total_gens}\n\n"
+        f"Приглашено: <b>{referral_count}</b> чел.\n"
+        f"Скидка: <b>{discount} звёзд</b>\n"
+        f"Пригласил: <b>{referrer_name}</b>",
         parse_mode="HTML",
         reply_markup=b.as_markup(),
     )

@@ -11,6 +11,8 @@ from handlers.generate import router as generate_router
 from handlers.profile  import router as profile_router
 from handlers.payment  import router as payment_router
 from handlers.admin    import router as admin_router
+from handlers.history  import router as history_router
+from utils.checker     import close_session
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,28 +28,27 @@ async def main():
     bot = Bot(token=config.BOT_TOKEN)
     dp  = Dispatcher(storage=MemoryStorage())
 
-    # Init DB and inject into bot context
     db = Database(config.DATABASE_PATH)
     await db.init()
-    bot.db = db
+    bot.db = db  # attach as attribute
 
-    # Register routers (admin first for priority filters)
     dp.include_router(admin_router)
     dp.include_router(start_router)
     dp.include_router(generate_router)
     dp.include_router(profile_router)
     dp.include_router(payment_router)
+    dp.include_router(history_router)
 
-    # Start scheduler
     scheduler = setup_scheduler(bot, db)
     scheduler.start()
     logger.info("Scheduler started")
 
-    logger.info("Bot starting…")
+    logger.info("Bot starting...")
     try:
         await dp.start_polling(bot, skip_updates=True)
     finally:
         scheduler.shutdown(wait=False)
+        await close_session()
         await bot.session.close()
         logger.info("Bot stopped")
 

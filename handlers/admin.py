@@ -88,11 +88,11 @@ async def show_stats(callback: CallbackQuery):
     db: Database = callback.bot.db
     s = await db.get_stats()
     await callback.message.edit_text(
-        f"📊 <b>Статистика бота</b>\n\n"
-        f"👥 Всего пользователей: <b>{s['total']}</b>\n"
-        f"⭐ Premium: <b>{s['premium']}</b>\n"
-        f"🟢 Активны сегодня: <b>{s['active_today']}</b>\n"
-        f"🎲 Генераций сегодня: <b>{s['gens_today']}</b>",
+        f"<b>Статистика</b>\n\n"
+        f"Всего: <b>{s['total']}</b>\n"
+        f"Premium: <b>{s['premium']}</b> (навсегда: <b>{s['lifetime']}</b>)\n"
+        f"Активны сегодня: <b>{s['active_today']}</b>\n"
+        f"Генераций сегодня: <b>{s['gens_today']}</b>",
         parse_mode="HTML",
         reply_markup=back_admin_kb(),
     )
