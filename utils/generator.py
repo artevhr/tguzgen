@@ -1,38 +1,78 @@
 """
 Username generators.
 
-Two styles:
-  random   — fully random alphanumeric+underscore (original behaviour)
-  readable — pronounceable / "branded" names inspired by Durov, Galaxy, NFT etc.
+Styles:   random | readable
+Filters:  standard | no_digits | letters_only
 """
 
 import random
 import string
 
-# ─── Random style ────────────────────────────────────────────────────────────
+_LETTERS    = string.ascii_lowercase
+_DIGITS     = string.digits
+_CHARS_STD  = _LETTERS + _DIGITS + "_"   # standard
+_CHARS_ND   = _LETTERS + "_"             # no digits
+_CHARS_LO   = _LETTERS                   # letters only
 
-_LETTERS = string.ascii_lowercase
-_CHARS   = string.ascii_lowercase + string.digits + "_"
+_VOWELS     = list("aeiou")
+_CONSONANTS = list("bcdfghjklmnprstvwz")
+
+_TECH_PARTS = [
+    "nft", "ton", "eth", "btc", "sol", "dao", "dev",
+    "web", "ai",  "io",  "hub", "lab", "bit", "net",
+    "meta", "nova", "node", "coin", "pay", "app", "pro",
+]
+_NATURE_PARTS = [
+    "sky", "sun", "moon", "star", "gal", "orb", "arc",
+    "bay", "fox", "oak", "ray", "zen", "fly", "ace",
+]
 
 
-def generate_username(length: int) -> str:
-    """Fully random username of exact `length`."""
+# ─── Helpers ─────────────────────────────────────────────────────────────────
+
+def _pool(filter_: str) -> str:
+    if filter_ == "letters_only":
+        return _CHARS_LO
+    if filter_ == "no_digits":
+        return _CHARS_ND
+    return _CHARS_STD
+
+
+def _safe_pool(filter_: str, after_underscore: bool = False) -> str:
+    """Pool to use when previous char was underscore (can't be another _ or digit start)."""
+    if after_underscore or filter_ in ("letters_only", "no_digits"):
+        return _CHARS_LO  # always safe: just letters
+    return _LETTERS + _DIGITS
+
+
+def _cv_syllable(long: bool = False) -> str:
+    c = random.choice(_CONSONANTS)
+    v = random.choice(_VOWELS)
+    return (c + v + random.choice(_CONSONANTS)) if long else (c + v)
+
+
+# ─── Random style ─────────────────────────────────────────────────────────────
+
+def generate_username(length: int, filter_: str = "standard") -> str:
     length = max(2, min(32, length))
-    chars = [random.choice(_LETTERS)]
+    pool = _pool(filter_)
+    chars = [random.choice(_LETTERS)]  # always start with letter
     for _ in range(length - 1):
-        pool = _LETTERS + string.digits if chars[-1] == "_" else _CHARS
-        chars.append(random.choice(pool))
-    while chars and chars[-1] == "_":
-        chars[-1] = random.choice(_LETTERS + string.digits)
+        prev = chars[-1]
+        p = _safe_pool(filter_, after_underscore=(prev == "_")) if prev == "_" else pool
+        chars.append(random.choice(p))
+    # no trailing underscore
+    while chars[-1] == "_":
+        chars[-1] = random.choice(_LETTERS + (_DIGITS if filter_ == "standard" else ""))
     return "".join(chars)
 
 
-def generate_batch(length: int, count: int) -> list[str]:
+def generate_batch(length: int, count: int, filter_: str = "standard") -> list[str]:
     seen: set[str] = set()
     results: list[str] = []
     attempts = 0
-    while len(results) < count and attempts < count * 20:
-        u = generate_username(length)
+    while len(results) < count and attempts < count * 25:
+        u = generate_username(length, filter_)
         if u not in seen:
             seen.add(u)
             results.append(u)
@@ -40,47 +80,16 @@ def generate_batch(length: int, count: int) -> list[str]:
     return results
 
 
-# ─── Readable / Branded style ────────────────────────────────────────────────
-
-_VOWELS     = list("aeiou")
-_CONSONANTS = list("bcdfghjklmnprstvwz")
-
-# Crypto / tech / web3 suffixes and prefixes that feel modern
-_TECH_PARTS = [
-    "nft", "ton", "eth", "btc", "sol", "dao", "dev",
-    "web", "ai",  "io",  "hub", "lab", "bit", "net",
-    "meta", "nova", "node", "coin", "pay",
-]
-
-# Short nature / space words that sound cool
-_NATURE_PARTS = [
-    "sky", "sun", "moon", "star", "gal", "orb", "arc",
-    "bay", "fox", "oak", "ray", "zen",
-]
-
-# Classic melodic syllables (CV or CVC patterns)
-def _cv_syllable(long: bool = False) -> str:
-    c = random.choice(_CONSONANTS)
-    v = random.choice(_VOWELS)
-    if long:
-        c2 = random.choice(_CONSONANTS)
-        return c + v + c2
-    return c + v
-
+# ─── Readable / Branded style ─────────────────────────────────────────────────
 
 def _readable_word(length: int) -> str:
-    """
-    Build a pronounceable word of approximately `length` characters.
-    Occasionally anchors around a tech/nature stem.
-    """
+    """Pure syllable-chain word (letters only by nature)."""
     length = max(4, min(32, length))
 
-    # 35% chance: use a known stem and pad with syllables
     if random.random() < 0.35:
         stem = random.choice(_TECH_PARTS + _NATURE_PARTS)
         if len(stem) >= length:
             return stem[:length]
-        # Pad with CV syllables on either side
         remaining = length - len(stem)
         prefix_len = random.randint(0, remaining)
         suffix_len = remaining - prefix_len
@@ -93,56 +102,70 @@ def _readable_word(length: int) -> str:
             suffix += _cv_syllable()
         suffix = suffix[:suffix_len]
         word = prefix + stem + suffix
-        # Ensure starts with a letter
         if word and not word[0].isalpha():
             word = random.choice(_LETTERS) + word[1:]
         return word[:length]
 
-    # Pure CV syllable chain
     word = ""
     while len(word) < length:
-        use_long = random.random() < 0.3
-        word += _cv_syllable(long=use_long)
-
+        word += _cv_syllable(long=random.random() < 0.3)
     word = word[:length]
-    # Guarantee starts with a letter
     if word and not word[0].isalpha():
         word = random.choice(_LETTERS) + word[1:]
     return word
 
 
-def generate_readable_username(length: int) -> str:
-    """
-    Generate one pronounceable / branded-style username.
-    Length 4–32. Occasionally inserts a digit or underscore for variety.
-    """
+def generate_readable_username(length: int, filter_: str = "standard") -> str:
     length = max(4, min(32, length))
     word = _readable_word(length)
 
-    # ~20% chance: replace one non-first character with a digit (e.g. "nova7")
-    if len(word) > 4 and random.random() < 0.20:
-        pos = random.randint(len(word) // 2, len(word) - 1)
-        word = word[:pos] + str(random.randint(0, 9)) + word[pos + 1:]
+    if filter_ == "standard":
+        # ~20% digit
+        if len(word) > 4 and random.random() < 0.20:
+            pos = random.randint(len(word) // 2, len(word) - 1)
+            word = word[:pos] + str(random.randint(0, 9)) + word[pos + 1:]
+        # ~10% underscore
+        if len(word) > 6 and random.random() < 0.10:
+            pos = random.randint(3, len(word) - 3)
+            word = word[:pos] + "_" + word[pos + 1:]
+            if word[-1] == "_":
+                word = word[:-1] + random.choice(_LETTERS)
 
-    # ~10% chance: insert underscore before last segment (e.g. "gal_nova")
-    if len(word) > 6 and random.random() < 0.10:
-        pos = random.randint(3, len(word) - 3)
-        word = word[:pos] + "_" + word[pos + 1:]
-        # No trailing underscore
-        if word[-1] == "_":
-            word = word[:-1] + random.choice(_LETTERS)
+    elif filter_ == "no_digits":
+        # ~10% underscore only, no digits
+        if len(word) > 6 and random.random() < 0.10:
+            pos = random.randint(3, len(word) - 3)
+            word = word[:pos] + "_" + word[pos + 1:]
+            if word[-1] == "_":
+                word = word[:-1] + random.choice(_LETTERS)
+
+    # letters_only: _readable_word is already pure letters, nothing to add
 
     return word[:length]
 
 
-def generate_readable_batch(length: int, count: int) -> list[str]:
+def generate_readable_batch(length: int, count: int, filter_: str = "standard") -> list[str]:
     seen: set[str] = set()
     results: list[str] = []
     attempts = 0
     while len(results) < count and attempts < count * 30:
-        u = generate_readable_username(length)
+        u = generate_readable_username(length, filter_)
         if u not in seen:
             seen.add(u)
             results.append(u)
         attempts += 1
     return results
+
+
+# ─── Unified dispatch ─────────────────────────────────────────────────────────
+
+def gen_one(style: str, length: int, filter_: str) -> str:
+    if style == "readable":
+        return generate_readable_username(length, filter_)
+    return generate_username(length, filter_)
+
+
+def gen_batch(style: str, length: int, count: int, filter_: str) -> list[str]:
+    if style == "readable":
+        return generate_readable_batch(length, count, filter_)
+    return generate_batch(length, count, filter_)

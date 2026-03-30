@@ -11,7 +11,12 @@ _PAGE_SIZE = 15
 
 
 def _style_label(style: str) -> str:
-    return "созвучн." if style == "readable" else "случайн."
+    parts = style.split("_", 1)
+    base = parts[0]
+    filter_ = parts[1] if len(parts) > 1 else "standard"
+    base_lbl = "созвучн." if base == "readable" else "случайн."
+    filter_lbl = {"no_digits": "без цифр", "letters_only": "обычные"}.get(filter_, "")
+    return f"{base_lbl} {filter_lbl}".strip()
 
 
 @router.callback_query(F.data == "history")
