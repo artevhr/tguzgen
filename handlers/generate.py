@@ -348,7 +348,7 @@ async def _generate_free(
 
     # All names in one plain list — free ones first, then unchecked
     all_names = free_names + taken_names
-    result_text = "\n".join(f"@{u}" for u in all_names)
+    result_text = "\n".join(f'<a href="https://t.me/{u}">@{u}</a>' for u in all_names)
     b = InlineKeyboardBuilder()
     b.button(text="Ещё раз",       callback_data="generate")
     b.button(text="Купить Premium", callback_data="premium")
@@ -362,7 +362,7 @@ async def _generate_free(
     checked_note = f"Проверено через Telegram + Fragment: {n_check} шт."
     text = (
         f"<b>Юзернеймы</b> — {_style_label(style)}, длина {length}\n\n"
-        f"<code>{result_text}</code>\n\n"
+        f"{result_text}\n\n"
         f"{checked_note}\n"
         f"Остальные не проверялись.\n"
         f"Осталось сегодня: {remaining}/{config.FREE_DAILY_LIMIT}\n\n"
@@ -430,7 +430,7 @@ async def _generate_premium(
     await db.add_to_history(user_id, found, length, style)
     await db.increment_generations(user_id, len(found))
 
-    lines = "\n".join(f"@{u}" for u in found)
+    lines = "\n".join(f'<a href="https://t.me/{u}">@{u}</a>' for u in found)
     await editable_msg.edit_text(
         f"<b>Свободные юзернеймы</b> — {_style_label(style)}, длина {length}\n\n"
         f"<code>{lines}</code>\n\n"

@@ -77,16 +77,16 @@ async def show_profile(callback: CallbackQuery):
     b.adjust(1)
 
     await callback.message.edit_text(
-        f"<b>Личный кабинет</b>\n\n"
-        f"ID: <code>{uid}</code>\n"
-        f"Юзернейм: {uname_line}\n"
-        f"Регистрация: {created_str}\n\n"
-        f"Тариф: <b>{tier}</b>{expiry_line}\n"
-        f"Генераций: {gens_line}\n"
-        f"Всего генераций: {total_gens}\n\n"
-        f"Приглашено: <b>{referral_count}</b> чел.\n"
-        f"Скидка: <b>{discount} звёзд</b>\n"
-        f"Пригласил: <b>{referrer_name}</b>",
+        f"👤 <b>Личный кабинет</b>\n\n"
+        f"🆔 ID: <code>{uid}</code>\n"
+        f"📛 Юзернейм: {uname_line}\n"
+        f"📆 Регистрация: {created_str}\n\n"
+        f"🏷 Тариф: <b>{tier}</b>{expiry_line}\n"
+        f"🎲 Генераций: {gens_line}\n"
+        f"📊 Всего генераций: {total_gens}\n\n"
+        f"👥 Приглашено: <b>{referral_count}</b> чел.\n"
+        f"💰 Скидка: <b>{discount} ⭐</b>\n"
+        f"🔗 Пригласил: <b>{referrer_name}</b>",
         parse_mode="HTML",
         reply_markup=b.as_markup(),
     )
