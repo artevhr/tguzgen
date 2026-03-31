@@ -3,7 +3,7 @@ Username availability checker.
 
 Two-pass approach:
   1. Telegram Bot API  – bot.get_chat()
-  2. Fragment marketplace  – прямой фетч страницы fragment.com/@username
+  2. Fragment marketplace  – прямой фетч страницы fragment.com/username/NAME
 
 Fragment: если страница отдаёт 200 и содержит признаки аукциона
 ("Bid", "Buy now", "place a bid", auction JSON) — имя на продаже → занято.
@@ -30,15 +30,24 @@ _HEADERS = {
     "Accept-Language": "en-US,en;q=0.5",
 }
 
-# Признаки того что имя выставлено/продано на Fragment
+# Признаки страницы аукциона на fragment.com/username/NAME
+# Проверено на реальных страницах (coinb, durov и т.д.)
 _FRAGMENT_AUCTION_MARKERS = [
     "place a bid",
+    "make a bid",
     "buy now",
     "auction ended",
     "minimum bid",
-    '"@' ,       # JSON с именем в auction-блоке
-    "ton_auctions",
+    "current bid",
+    "winning bid",
+    "reserve price",
     "table-cell-auction",
+    "ton_auctions",
+    "js-auction",
+    "data-bid",
+    '"sold"',
+    '"active"',
+    "fragment-username",
 ]
 
 _session: aiohttp.ClientSession | None = None
@@ -68,37 +77,60 @@ async def close_session():
 
 async def _fragment_is_taken(username: str) -> bool:
     """
-    Fetches fragment.com/@username and checks for auction markers.
+    Two-pass Fragment check:
+      Pass 1 — GET fragment.com/username/NAME (прямая страница ника)
+      Pass 2 — API searchAuctions с точной проверкой имени (fallback)
+
     Returns True → имя на Fragment (занято).
-    Returns False → не найдено или ошибка (fail-open).
+    Returns False → не найдено или сетевая ошибка (fail-open).
     """
-    url = f"{_FRAGMENT_BASE}/@{username.lower()}"
+    uname = username.lower()
     session = _get_session()
+
+    # ── Pass 1: прямая страница ──────────────────────────────────────────
+    url = f"{_FRAGMENT_BASE}/username/{uname}"
     try:
         async with session.get(url, allow_redirects=True) as resp:
-            if resp.status == 404:
-                return False   # страницы нет → не на Fragment
-            if resp.status != 200:
-                logger.debug(f"Fragment HTTP {resp.status} for @{username}")
-                return False   # fail-open
-
-            # Читаем первые 16KB — достаточно для проверки маркеров
-            raw = await resp.content.read(16384)
-            html = raw.decode("utf-8", errors="replace").lower()
-
-            for marker in _FRAGMENT_AUCTION_MARKERS:
-                if marker.lower() in html:
-                    logger.debug(f"@{username} found on Fragment (marker: {marker!r})")
+            if resp.status == 200:
+                raw  = await resp.content.read(32768)
+                html = raw.decode("utf-8", errors="replace").lower()
+                for marker in _FRAGMENT_AUCTION_MARKERS:
+                    if marker.lower() in html:
+                        logger.debug(f"@{username}: Fragment page hit (marker={marker!r})")
+                        return True
+                # Страница существует но маркеров нет — имя зарезервировано/занято
+                # Если видим имя на странице вместе со словом "username" — скорее всего занято
+                if f"/{uname}" in html and ("username" in html or "auction" in html):
+                    logger.debug(f"@{username}: Fragment page exists with username context")
                     return True
-
-            return False
-
+            elif resp.status not in (404, 301, 302):
+                logger.debug(f"@{username}: Fragment page status {resp.status}")
     except asyncio.TimeoutError:
-        logger.debug(f"Fragment timeout for @{username}")
-        return False
+        logger.debug(f"@{username}: Fragment page timeout")
     except Exception as e:
-        logger.debug(f"Fragment check error for @{username}: {e}")
-        return False
+        logger.debug(f"@{username}: Fragment page error: {e}")
+
+    # ── Pass 2: searchAuctions API (точное совпадение) ───────────────────
+    for filt in ("active", "sold", "cancelled"):
+        try:
+            params = {"method": "searchAuctions", "query": uname, "filter": filt}
+            async with session.get(
+                f"{_FRAGMENT_BASE}/api", params=params
+            ) as resp:
+                if resp.status != 200:
+                    continue
+                data = await resp.json(content_type=None)
+                for item in data.get("auctions") or []:
+                    item_name = (item.get("username") or "").lstrip("@").lower()
+                    if item_name == uname:
+                        logger.debug(f"@{username}: found in searchAuctions filter={filt}")
+                        return True
+        except asyncio.TimeoutError:
+            logger.debug(f"@{username}: searchAuctions timeout (filter={filt})")
+        except Exception as e:
+            logger.debug(f"@{username}: searchAuctions error: {e}")
+
+    return False
 
 
 # ─── Telegram Bot API check ──────────────────────────────────────────────────
