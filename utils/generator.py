@@ -21,10 +21,23 @@ _TECH_PARTS = [
     "nft", "ton", "eth", "btc", "sol", "dao", "dev",
     "web", "ai",  "io",  "hub", "lab", "bit", "net",
     "meta", "nova", "node", "coin", "pay", "app", "pro",
+    "crypt", "block", "chain", "dapp", "swap", "lend",
+    "stake", "cloud", "edge", "data", "code", "api",
+    "sdk", "bot", "flow", "sync", "mesh", "p2p", "vpn",
+    "byte", "hash", "key", "wallet", "token", "node2",
+    "stack", "repo", "git", "url", "dns", "cdn", "app2",
+    "web3", "zero", "proof", "zksync", "bridge",
 ]
 _NATURE_PARTS = [
     "sky", "sun", "moon", "star", "gal", "orb", "arc",
     "bay", "fox", "oak", "ray", "zen", "fly", "ace",
+    "claw", "fang", "peak", "glow", "frost", "moss",
+    "fern", "stone", "cave", "wave", "tide", "storm",
+    "flare", "spark", "blaze", "shard", "thorn", "root",
+    "leaf", "petal", "ash", "ember", "cinder", "dune",
+    "cliff", "ridge", "vale", "brook", "creek", "pine",
+    "birch", "raven", "hawk", "wolf", "lynx", "fawn",
+    "buck", "stag", "willow", "ivy",
 ]
 
 
